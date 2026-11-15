@@ -1,23 +1,105 @@
 """Shared helpers for the bradens-unity-skills hooks.
 
-A hook reads the tool call as JSON on stdin. Exit code 2 blocks the call and shows stderr to Claude.
-Every guard can be turned off with its own environment variable set to "off", or all at once with
-BRADENS_GUARDS=off.
+A hook reads the tool call as JSON on stdin. Three outcomes:
+- block: exit code 2, stderr is shown to Claude and the call does not run (PreToolUse).
+- ask: the user's permission prompt is shown before the call runs (PreToolUse).
+- warn: the call already ran; Claude gets the issues as extra context (PostToolUse).
+
+Every rule has an id "<group>.<name>". A rule is off when any of these holds:
+- BRADENS_GUARDS=off (all rules),
+- BRADENS_<GROUP>_GUARD=off (the group, dashes in the group become underscores),
+- the Unity project's .claude/bradens-unity.json lists the rule id or the group in "disabledRules".
 """
 
 import json
 import os
+import re
 import sys
 
 BLOCK_EXIT_CODE = 2
 ALL_GUARDS_ENV = "BRADENS_GUARDS"
+CONFIG_RELATIVE_PATH = os.path.join(".claude", "bradens-unity.json")
+PROJECT_VERSION_FILE = os.path.join("ProjectSettings", "ProjectVersion.txt")
+SKIPPED_PATH_PARTS = ("/ThirdParty/", "/Library/", "/PackageCache/")
+GENERIC_FOLDER_NAMES = {"Scripts", "Runtime", "Editor", "Tests", "Prefabs", "Data", "UI"}
 
 
-def is_enabled(env_name):
-    """True unless the guard or all guards are switched off."""
-    if os.environ.get(ALL_GUARDS_ENV, "").lower() == "off":
-        return False
-    return os.environ.get(env_name, "").lower() != "off"
+def group_env_name(group):
+    return "BRADENS_" + group.upper().replace("-", "_") + "_GUARD"
+
+
+def normalize(path):
+    return (path or "").replace("\\", "/")
+
+
+def find_unity_root(path):
+    """The nearest folder at or above path that has ProjectSettings/ProjectVersion.txt, or None."""
+    if not path:
+        return None
+    current = os.path.abspath(path)
+    if os.path.isfile(current) or not os.path.exists(current):
+        current = os.path.dirname(current)
+    while True:
+        if os.path.isfile(os.path.join(current, PROJECT_VERSION_FILE)):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:
+            return None
+        current = parent
+
+
+def load_config(unity_root):
+    """The project's optional .claude/bradens-unity.json, or an empty dict."""
+    if not unity_root:
+        return {}
+    config_path = os.path.join(unity_root, CONFIG_RELATIVE_PATH)
+    try:
+        with open(config_path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def namespace_root(unity_root, config):
+    """Config namespaceRoot, else the project folder name made into a C# identifier."""
+    configured = config.get("namespaceRoot")
+    if configured:
+        return configured
+    name = os.path.basename(os.path.normpath(unity_root or ""))
+    name = re.sub(r"[^A-Za-z0-9_]", "", name)
+    if name and name[0].isdigit():
+        name = "_" + name
+    return name
+
+
+class Context:
+    """The Unity project a tool call touches, plus its config."""
+
+    def __init__(self, path_hint, cwd=None):
+        self.unity_root = find_unity_root(path_hint) or (find_unity_root(cwd) if cwd else None)
+        self.config = load_config(self.unity_root)
+
+    @property
+    def in_unity(self):
+        return self.unity_root is not None
+
+    def enabled(self, rule_id):
+        if os.environ.get(ALL_GUARDS_ENV, "").lower() == "off":
+            return False
+        group = rule_id.split(".", 1)[0]
+        if os.environ.get(group_env_name(group), "").lower() == "off":
+            return False
+        disabled = self.config.get("disabledRules") or []
+        return rule_id not in disabled and group not in disabled
+
+    def unity_enabled(self, rule_id):
+        return self.in_unity and self.enabled(rule_id)
+
+
+def is_skipped_path(path):
+    path = "/" + normalize(path).lstrip("/")
+    return any(part in path for part in SKIPPED_PATH_PARTS)
 
 
 def read_event():
@@ -29,11 +111,60 @@ def read_event():
         return None
 
 
-def block(problems, env_name):
+class Findings:
+    """Problems found by one hook run, each tagged with its rule id."""
+
+    def __init__(self):
+        self.items = []
+
+    def add(self, rule_id, message):
+        self.items.append((rule_id, message))
+
+    def __bool__(self):
+        return bool(self.items)
+
+    def lines(self):
+        return [f"- [{rule_id}] {message}" for rule_id, message in self.items]
+
+    def off_switch_hint(self):
+        groups = sorted({rule_id.split(".", 1)[0] for rule_id, _ in self.items})
+        envs = ", ".join(f"{group_env_name(group)}=off" for group in groups)
+        return f"(False positive? Add the rule id to disabledRules in {CONFIG_RELATIVE_PATH}, or set {envs}.)"
+
+
+def block(findings):
     """Print every problem and block the tool call."""
     sys.stderr.reconfigure(encoding="utf-8")
     print("Blocked by bradens-unity-skills:", file=sys.stderr)
-    for problem in problems:
-        print("- " + problem, file=sys.stderr)
-    print(f"(If this is a false positive, the user can set {env_name}=off.)", file=sys.stderr)
+    for line in findings.lines():
+        print(line, file=sys.stderr)
+    print(findings.off_switch_hint(), file=sys.stderr)
     sys.exit(BLOCK_EXIT_CODE)
+
+
+def ask(findings):
+    """Show the user's permission prompt with the reasons."""
+    reason = "bradens-unity-skills: " + " ".join(message for _, message in findings.items)
+    output = {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "ask",
+            "permissionDecisionReason": reason,
+        }
+    }
+    sys.stdout.reconfigure(encoding="utf-8")
+    print(json.dumps(output))
+    sys.exit(0)
+
+
+def warn(findings, event_name="PostToolUse"):
+    """Let the call stand and hand Claude the issues to fix."""
+    text = "\n".join(
+        ["bradens-unity-skills found rule issues in what just ran. Fix them now unless there is a good reason:"]
+        + findings.lines()
+        + [findings.off_switch_hint()]
+    )
+    output = {"hookSpecificOutput": {"hookEventName": event_name, "additionalContext": text}}
+    sys.stdout.reconfigure(encoding="utf-8")
+    print(json.dumps(output))
+    sys.exit(0)

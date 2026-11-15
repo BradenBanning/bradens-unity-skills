@@ -1,6 +1,17 @@
 {
-  "description": "Rule hooks. Shell guard: blocks heredocs, a bare `python -` and multi-line `python -c` under Git Bash on Windows. Edit guard: blocks em/en dashes in written text, and legacy UnityEngine.Input or MaterialPropertyBlock in C#. Command guard: requires --project-path on `unity command`, and blocks commits with dashes in the message, Unity cache folders or files over 10 MB.",
+  "description": "Rule hooks for Unity projects (dash and commit-size rules apply everywhere). PreToolUse blocks clear-cut breaks: heredocs on Git Bash, em/en dashes, legacy Input, MaterialPropertyBlock, ThirdParty edits, .meta guid changes and unpaired asset moves, unity command flags, and bad commits. PostToolUse warns on fuzzy rules: C# style, per-frame allocations, uGUI/ParticleSystem/legacy renderer features, unreset statics, hand-edited YAML, script eval and commits on main. SessionStart reports the UnityYAMLMerge and LFS setup; Stop reminds to verify C# changes.",
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-python.sh\" session_check.py",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -27,6 +38,39 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-python.sh\" edit_guard.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-python.sh\" command_lint.py",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-python.sh\" edit_lint.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-python.sh\" stop_check.py",
             "timeout": 15
           }
         ]

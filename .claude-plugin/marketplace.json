@@ -8,8 +8,8 @@
     {
       "name": "bradens-unity-skills",
       "source": "./",
-      "description": "Unity skills (VFX from texture packs, real-input PlayMode tests, asset pack extraction, model icons, Editor CLI recovery, debug menu with CLI mirror, Steam Deck deploy, clarify) plus rule hooks: shell guard, dash guard, Unity API guard, unity CLI guard and commit guard.",
-      "version": "0.1.0"
+      "description": "Unity skills (VFX from texture packs, real-input PlayMode tests, asset pack extraction, model icons, Editor CLI recovery, debug menu with CLI mirror, Steam Deck deploy, clarify, git setup, feature scaffold, uber shader, verify change) plus rule hooks that block clear-cut CLAUDE.md rule breaks and warn on fuzzy ones.",
+      "version": "0.2.0"
     }
   ]
 }
