@@ -3,7 +3,7 @@
 A Claude Code plugin with Unity skills and rule hooks. Forked from Quin Henshaw's
 [quins-unity-skills](https://github.com/qhenshaw/quins-unity-skills) 0.7.0; the first eight skills are Quin's work.
 The rule hooks and the last four skills turn a Unity project's CLAUDE.md rules into checks and know-how, so a project's
-CLAUDE.md can stay short.
+CLAUDE.md can stay short. What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Skills
 
