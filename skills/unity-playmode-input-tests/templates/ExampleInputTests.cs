@@ -41,8 +41,20 @@ namespace MyGame.Tests
             Set(pad.leftStick, new Vector2(0f, 1f));
             yield return new WaitForSeconds(0.5f);
             Set(pad.leftStick, Vector2.zero);
+            yield return null; // one event per device per frame, or the Tap's event re-applies the old stick value
             yield return Tap(pad.buttonSouth);
             Assert.Greater(Player.transform.position.z - start.z, 1f, "Stick up should move the player along +Z");
+        }
+
+        [UnityTest]
+        public IEnumerator ShiftAndD_Sprints()
+        {
+            yield return StartGame();
+            var start = Player.transform.position;
+            Press(Keyboard.leftShiftKey, Keyboard.dKey); // a chord goes in ONE call; two Press calls in one frame keep only the last
+            yield return new WaitForSeconds(0.6f);
+            Release(Keyboard.leftShiftKey, Keyboard.dKey);
+            Assert.Greater(Player.transform.position.x - start.x, 1.5f, "Shift + D should sprint right, further than a run");
         }
 
         [UnityTest]

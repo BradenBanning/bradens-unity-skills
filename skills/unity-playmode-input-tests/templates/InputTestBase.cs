@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -44,7 +45,7 @@ namespace MyGame.Tests
         public IEnumerator TearDownDevices()
         {
             if (Keyboard != null) InputSystem.QueueStateEvent(Keyboard, new KeyboardState());
-            if (Mouse != null) Write(Mouse.leftButton, 0f);
+            if (Mouse != null) Release(Mouse.leftButton);
             if (_addedGamepad != null) InputSystem.QueueStateEvent(_addedGamepad, new GamepadState());
             yield return null; // let the neutral states process before removing devices
             if (_addedGamepad != null) InputSystem.RemoveDevice(_addedGamepad);
@@ -67,6 +68,12 @@ namespace MyGame.Tests
             return _addedGamepad;
         }
 
+        // Every helper below queues a FULL device state event built from the device's state as it is right now.
+        // Queued events aren't applied until the next input update, so a second event for the same device in the
+        // same frame is built from the old state and undoes the first one (Shift then D in one frame = only D held;
+        // centring a stick then tapping a button = stick pushed again). Change several buttons of one device at
+        // once with Press(a, b) / Release(a, b), or yield a frame between calls on the same device.
+
         private static void Write<T>(InputControl<T> control, T value) where T : struct
         {
             using (StateEvent.From(control.device, out var eventPtr))
@@ -76,9 +83,28 @@ namespace MyGame.Tests
             }
         }
 
-        protected static void Press(ButtonControl button) => Write(button, 1f);
-        protected static void Release(ButtonControl button) => Write(button, 0f);
+        private static void WriteButtons(ButtonControl[] buttons, float value)
+        {
+            foreach (var group in buttons.GroupBy(b => b.device))
+            {
+                using (StateEvent.From(group.Key, out var eventPtr))
+                {
+                    foreach (var button in group) button.WriteValueIntoEvent(value, eventPtr);
+                    InputSystem.QueueEvent(eventPtr);
+                }
+            }
+        }
+
+        /// <summary>Press one or more buttons in one event per device, e.g. Press(Keyboard.leftShiftKey, Keyboard.dKey).</summary>
+        protected static void Press(params ButtonControl[] buttons) => WriteButtons(buttons, 1f);
+
+        /// <summary>Release one or more buttons in one event per device.</summary>
+        protected static void Release(params ButtonControl[] buttons) => WriteButtons(buttons, 0f);
+
+        /// <summary>Set a stick. One event per device per frame (see the note above).</summary>
         protected static void Set(Vector2Control control, Vector2 value) => Write(control, value);
+
+        /// <summary>Set a single axis such as a trigger. One event per device per frame.</summary>
         protected static void Set(AxisControl control, float value) => Write(control, value);
 
         /// <summary>Press, hold for two frames, release, wait two frames (enough for "performed" + UI submit).</summary>

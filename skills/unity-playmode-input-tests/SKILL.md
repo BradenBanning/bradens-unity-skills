@@ -46,6 +46,11 @@ off). Driving the device instead of the code path catches that class of bug.
 
 ## Gotchas (each one cost a debugging session)
 
+- **One state event per device per frame.** Each helper queues a full device state built from the device's current
+  state, and queued events only apply at the next input update. So `Press(shift); Press(d);` in one frame leaves only
+  D held (the sprint test fails with "never reached sprint speed"), and `Set(stick, zero); Tap(south)` pushes the
+  stick again. Press a chord in one call (`Press(Keyboard.leftShiftKey, Keyboard.dKey)`, same for `Release`) or
+  `yield return null` between calls on the same device. Different devices in one frame are fine.
 - **No move event if the mouse is already there.** A test that hovers the same position the previous test left the
   mouse at gets no `PointerMove`, so hover/tooltip code never runs. `MoveMouse` nudges away first.
 - **`VisualEffect.aliveParticleCount` and similar GPU readbacks lag.** Poll for up to ~30 frames with `WaitFor`
