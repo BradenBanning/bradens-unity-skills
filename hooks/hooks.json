@@ -1,0 +1,36 @@
+{
+  "description": "Rule hooks. Shell guard: blocks heredocs, a bare `python -` and multi-line `python -c` under Git Bash on Windows. Edit guard: blocks em/en dashes in written text, and legacy UnityEngine.Input or MaterialPropertyBlock in C#. Command guard: requires --project-path on `unity command`, and blocks commits with dashes in the message, Unity cache folders or files over 10 MB.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-guard.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-python.sh\" command_guard.py",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run-python.sh\" edit_guard.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "bradens-unity-skills",
+  "description": "Braden's Unity skills and rule hooks for Claude Code, forked from quins-unity-skills.",
+  "owner": {
+    "name": "Braden"
+  },
+  "plugins": [
+    {
+      "name": "bradens-unity-skills",
+      "source": "./",
+      "description": "Unity skills (VFX from texture packs, real-input PlayMode tests, asset pack extraction, model icons, Editor CLI recovery, debug menu with CLI mirror, Steam Deck deploy, clarify) plus rule hooks: shell guard, dash guard, Unity API guard, unity CLI guard and commit guard.",
+      "version": "0.1.0"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "bradens-unity-skills",
+  "version": "0.1.0",
+  "description": "Braden's Unity skills for Claude Code, forked from Quin Henshaw's quins-unity-skills 0.7.0: VFX Graph effects from texture packs, PlayMode tests through real input devices, selective asset pack extraction, 3D model icon rendering, keeping a CLI-driven Editor unblocked, an in-game debug menu with a CLI mirror, Steam Deck builds and a task clarification interview. Adds hooks that enforce checkable project rules: no em or en dashes, no legacy Input or MaterialPropertyBlock in C#, --project-path on unity command, and commit checks for Unity cache folders and files over 10 MB.",
+  "author": {
+    "name": "Braden"
+  },
+  "keywords": [
+    "unity",
+    "vfx",
+    "vfx-graph",
+    "urp",
+    "gamedev",
+    "testing",
+    "input-system",
+    "asset-store",
+    "icons",
+    "cli",
+    "debug-menu",
+    "ui-toolkit",
+    "steam-deck",
+    "clarify",
+    "hooks",
+    "guardrails"
+  ]
+}
