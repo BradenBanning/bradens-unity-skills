@@ -147,9 +147,13 @@ def edit_guard_cases(unity, plain):
     attributes = put(os.path.join(unity, ".gitattributes"), "*.unity merge=unityyamlmerge eol=lf\n")
     check("untracked .gitattributes allowed", g, edit_ev(attributes, "eol=lf", "eol=lf "), ALLOW)
     git(unity, "add", ".gitattributes")
-    check("committed .gitattributes asks", g, edit_ev(attributes, "eol=lf", "eol=lf "), ASK)
+    check("committed .gitattributes blocked", g, edit_ev(attributes, "eol=lf", "eol=lf "), BLOCK, "git.gitattributes")
+    check("committed .gitattributes Write blocked", g, write_ev(attributes, "* text=auto\n"), BLOCK,
+          "git.gitattributes")
+    check(".gitattributes outside Unity allowed", g,
+          edit_ev(os.path.join(plain, ".gitattributes"), "a", "b"), ALLOW)
     put(os.path.join(unity, ".claude", "bradens-unity.json"), json.dumps({"disabledRules": ["git.gitattributes"]}))
-    check("config disabledRules turns ask off", g, edit_ev(attributes, "eol=lf", "eol=lf "), ALLOW)
+    check("config disabledRules turns the rule off", g, edit_ev(attributes, "eol=lf", "eol=lf "), ALLOW)
     os.remove(os.path.join(unity, ".claude", "bradens-unity.json"))
 
 

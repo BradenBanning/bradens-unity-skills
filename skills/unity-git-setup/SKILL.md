@@ -47,7 +47,8 @@ git config merge.unityyamlmerge.recursive binary
 
 ## 3. Committed files
 
-Ask the user before changing a committed `.gitattributes` (the edit hook asks for you). For a new project, start
+Ask the user in chat before changing a committed `.gitattributes`, showing the exact change (the edit hook blocks
+Write and Edit on it). For a new project, start
 from the templates:
 
 - `templates/unity.gitattributes`: `merge=unityyamlmerge eol=lf` for `*.unity *.prefab *.asset *.mat *.anim

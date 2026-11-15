@@ -1,9 +1,10 @@
 """Shared helpers for the bradens-unity-skills hooks.
 
-A hook reads the tool call as JSON on stdin. Three outcomes:
+A hook reads the tool call as JSON on stdin. Two outcomes:
 - block: exit code 2, stderr is shown to Claude and the call does not run (PreToolUse).
-- ask: the user's permission prompt is shown before the call runs (PreToolUse).
 - warn: the call already ran; Claude gets the issues as extra context (PostToolUse).
+There is no "ask" outcome on purpose: permission modes that auto-approve can let an ask through without the user
+seeing it, so anything that needs the user's say blocks and tells Claude to ask in chat.
 
 Every rule has an id "<group>.<name>". A rule is off when any of these holds:
 - BRADENS_GUARDS=off (all rules),
@@ -140,21 +141,6 @@ def block(findings):
         print(line, file=sys.stderr)
     print(findings.off_switch_hint(), file=sys.stderr)
     sys.exit(BLOCK_EXIT_CODE)
-
-
-def ask(findings):
-    """Show the user's permission prompt with the reasons."""
-    reason = "bradens-unity-skills: " + " ".join(message for _, message in findings.items)
-    output = {
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "ask",
-            "permissionDecisionReason": reason,
-        }
-    }
-    sys.stdout.reconfigure(encoding="utf-8")
-    print(json.dumps(output))
-    sys.exit(0)
 
 
 def warn(findings, event_name="PostToolUse"):

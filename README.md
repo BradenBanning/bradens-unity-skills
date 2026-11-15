@@ -41,7 +41,7 @@ Rules only run inside a Unity project (the nearest folder above with `ProjectSet
 | `assets.third-party` | Write, Edit, rm, mv | block | Changing, moving or deleting anything under `Assets/ThirdParty/` |
 | `assets.meta-guid` | Write, Edit `.meta` | block | Changing or removing a `.meta` file's guid |
 | `assets.shell-meta` | rm, mv, git rm, git mv, Remove-Item, Move-Item | block | Moving or deleting an `Assets/` path without its `.meta` |
-| `git.gitattributes` | Write, Edit | ask | Changing a committed `.gitattributes` |
+| `git.gitattributes` | Write, Edit | block | Changing a committed `.gitattributes`; Claude must ask you in chat first. (It blocks rather than asks: permission modes that auto-approve let an "ask" hook through without a prompt.) |
 | `unity-cli.project-path` | Bash, PowerShell | block | `unity command` without `--project-path` (or not the configured `projectPath`) |
 | `unity-cli.caller` | Bash, PowerShell | block | `unity command` without `--caller` and `--skill` |
 | `commit.dash` | `git commit` | block | Em or en dashes in the commit command |

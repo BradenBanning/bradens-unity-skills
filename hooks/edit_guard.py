@@ -1,4 +1,4 @@
-"""PreToolUse hook for Write, Edit and MultiEdit: rules that block or ask before a file changes.
+"""PreToolUse hook for Write, Edit and MultiEdit: rules that block a file change before it happens.
 
 Checks only the text being written (Write content, Edit new_string), so a file that already breaks a rule can
 still be fixed.
@@ -10,7 +10,8 @@ Inside a Unity project:
   MaterialPropertyBlock.
 - assets.third-party: nothing under Assets/ThirdParty/ is edited.
 - assets.meta-guid: a .meta file keeps its guid.
-- git.gitattributes: changing a committed .gitattributes asks the user first.
+- git.gitattributes: a committed .gitattributes is not changed without the user's approval in chat. This blocks
+  rather than asks, because permission modes that auto-approve would let an "ask" through unseen.
 """
 
 import os
@@ -140,6 +141,18 @@ def check_meta_guid(ctx, path, tool_name, tool_input, findings):
             return
 
 
+def check_gitattributes(ctx, path, findings):
+    if os.path.basename(path) != ".gitattributes" or not ctx.unity_enabled("git.gitattributes"):
+        return
+    if is_tracked(path):
+        findings.add(
+            "git.gitattributes",
+            "This changes the committed .gitattributes, which routes LFS and the merge driver for every "
+            "contributor. Stop and ask the user in chat, showing the exact change. Only after they approve this "
+            "specific change, apply it with a shell command (this guard covers Write and Edit only).",
+        )
+
+
 def is_tracked(path):
     folder = os.path.dirname(os.path.abspath(path))
     try:
@@ -169,21 +182,9 @@ def main():
     check_meta_guid(ctx, path, tool_name, tool_input, findings)
     check_dashes(ctx, path, texts, findings)
     check_unity_api(ctx, path, texts, findings)
+    check_gitattributes(ctx, path, findings)
     if findings:
         gc.block(findings)
-
-    if (
-        os.path.basename(path) == ".gitattributes"
-        and ctx.unity_enabled("git.gitattributes")
-        and is_tracked(path)
-    ):
-        asking = gc.Findings()
-        asking.add(
-            "git.gitattributes",
-            "This changes a committed .gitattributes (LFS and merge driver routing for every contributor). "
-            "Approve only if you asked for it.",
-        )
-        gc.ask(asking)
 
 
 if __name__ == "__main__":
