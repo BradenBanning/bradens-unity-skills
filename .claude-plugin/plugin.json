@@ -1,6 +1,6 @@
 {
   "name": "bradens-unity-skills",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Braden's Unity skills for Claude Code, forked from Quin Henshaw's quins-unity-skills 0.7.0: VFX Graph effects from texture packs, PlayMode tests through real input devices, selective asset pack extraction, 3D model icon rendering, keeping a CLI-driven Editor unblocked, an in-game debug menu with a CLI mirror, Steam Deck builds and a task clarification interview; plus git setup, feature scaffolding, an UberLit uber shader and a verification checklist. Rule hooks turn a Unity project's CLAUDE.md into checks: clear-cut rules block (dashes, legacy Input, MaterialPropertyBlock, ThirdParty, .meta pairing, unity command flags, commit hygiene), fuzzy ones warn (C# style, per-frame allocations, uGUI, ParticleSystem, statics, hand-edited YAML).",
   "author": {
     "name": "Braden"

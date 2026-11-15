@@ -124,6 +124,8 @@ def edit_guard_cases(unity, plain):
     check("legacy Input blocked in Unity", g, write_ev(u_cs, "if (Input.GetKey(KeyCode.Space)) {}"), BLOCK,
           "unity-api.legacy-input")
     check("legacy Input ignored outside Unity", g, write_ev(os.path.join(plain, "A.cs"), "Input.GetKey(k);"), ALLOW)
+    check("file outside Unity ignored even from a Unity session", g,
+          write_ev(os.path.join(plain, "A.cs"), "Input.GetKey(k);", cwd=unity), ALLOW)
     check("UnityEngine.Input blocked", g, write_ev(u_cs, "var p = UnityEngine.Input.mousePosition;"), BLOCK,
           "unity-api.legacy-input")
     check("Input System allowed", g, write_ev(u_cs, "Keyboard.current.spaceKey.isPressed;"), ALLOW)
@@ -205,6 +207,8 @@ def edit_lint_cases(unity, plain):
     check("lint ignored outside Unity", g,
           write_ev(put(os.path.join(plain, "A.cs"), "class A { int bad; // c\n}"), "class A { int bad; // c\n}"),
           ALLOW)
+    check("lint ignored outside Unity from a Unity session", g,
+          write_ev(os.path.join(plain, "A.cs"), "class A { int bad; // c\n}", cwd=unity), ALLOW)
 
     bad_name = GOOD_COMPONENT.replace("private float _speed = 2f;", "private float speed = 2f;")
     check("field naming warns", g, lint_file(unity, mover, bad_name), WARN, "style.field-naming")
@@ -419,6 +423,12 @@ def command_lint_cases(unity, plain):
           cmd_ev('git commit -m "Avoid unity command script eval"', unity), ALLOW, absent="unity-cli.script-eval")
     git(unity, "switch", "-q", "-c", "main")
     check("commit on main warns", g, cmd_ev('git commit -m "x"', unity), WARN, "git.main-branch")
+    other = os.path.join(os.path.dirname(unity), "plugin-repo")
+    os.makedirs(other, exist_ok=True)
+    subprocess.run(["git", "-C", other, "init", "-q", "-b", "main"], check=True, capture_output=True)
+    check("cd into a non-Unity repo from a Unity session", g,
+          cmd_ev(f'cd "{other}"; git commit -m "x"', unity, "PowerShell"), ALLOW)
+    check("git -C a non-Unity repo from a Unity session", g, cmd_ev(f'git -C "{other}" commit -m "x"', unity), ALLOW)
     git(unity, "switch", "-q", "-c", "feature/gate")
     check("commit on feature branch passes", g, cmd_ev('git commit -m "x"', unity), ALLOW)
 

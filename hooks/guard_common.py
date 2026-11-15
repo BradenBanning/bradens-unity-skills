@@ -75,10 +75,15 @@ def namespace_root(unity_root, config):
 
 
 class Context:
-    """The Unity project a tool call touches, plus its config."""
+    """The Unity project a tool call touches, plus its config.
+
+    path_hint is the file or folder the call acts on. The session folder (cwd) is used only when the call names no
+    path, so a file or repo outside any Unity project never picks up the rules of the folder the session started in.
+    """
 
     def __init__(self, path_hint, cwd=None):
-        self.unity_root = find_unity_root(path_hint) or (find_unity_root(cwd) if cwd else None)
+        target = path_hint or cwd
+        self.unity_root = find_unity_root(target) if target else None
         self.config = load_config(self.unity_root)
 
     @property

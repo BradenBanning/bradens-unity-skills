@@ -52,7 +52,7 @@ def main():
     command = (event.get("tool_input") or {}).get("command") or ""
     cwd = event.get("cwd") or os.getcwd()
     repo_dir = repo_dir_for(command, cwd)
-    ctx = gc.Context(repo_dir, cwd)
+    ctx = gc.Context(repo_dir)
     if not ctx.in_unity:
         return
 

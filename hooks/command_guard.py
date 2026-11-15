@@ -427,7 +427,7 @@ def main():
     tool_name = event["tool_name"]
     command = (event.get("tool_input") or {}).get("command") or ""
     cwd = event.get("cwd") or os.getcwd()
-    ctx = gc.Context(repo_dir_for(command, cwd), cwd)
+    ctx = gc.Context(repo_dir_for(command, cwd))
 
     findings = gc.Findings()
     check_unity_cli(command, ctx, findings)
