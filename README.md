@@ -46,7 +46,14 @@ python tests/test_hooks.py
 
 ## Install
 
-Locally:
+From GitHub:
+
+```
+/plugin marketplace add BradenBanning/bradens-unity-skills
+/plugin install bradens-unity-skills@bradens-unity-skills
+```
+
+To try local changes before pushing:
 
 ```
 /plugin marketplace add C:/Repos/bradens-unity-skills
